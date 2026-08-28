@@ -7,6 +7,7 @@ from app.routers.networks import router as networks_router
 from app.routers.stress_test import router as stress_test_router
 from app.routers.crisis import router as crisis_router
 from app.routers.fragility import router as fragility_router
+from app.routers.macro import router as macro_router
 
 # Create FastAPI application instance
 app = FastAPI(title="ContagionLab API", version="0.2.0")
@@ -26,6 +27,7 @@ app.include_router(networks_router)
 app.include_router(stress_test_router)
 app.include_router(crisis_router)
 app.include_router(fragility_router)
+app.include_router(macro_router)
 
 
 @app.get("/health")

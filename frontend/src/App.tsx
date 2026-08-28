@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   buildNetwork,
+  buildMacroNetwork,
   computeFragility,
   type NetworkResponse,
   type StressTestResponse,
@@ -56,6 +57,7 @@ const EXAMPLE_PORTFOLIOS = [
 function App() {
   const [method, setMethod] = useState("pearson");
   const [assets, setAssets] = useState("SPY, QQQ, NVDA, AMD, JPM");
+  const [includeMacro, setIncludeMacro] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<NetworkResponse | null>(null);
@@ -78,7 +80,12 @@ function App() {
     setStressResults(null);
     setFragilityData(null);
     try {
-      const res = await buildNetwork(assetList, method);
+      let res: NetworkResponse;
+      if (includeMacro) {
+        res = await buildMacroNetwork(assetList, method);
+      } else {
+        res = await buildNetwork(assetList, method);
+      }
       setData(res);
       computeFragility(assetList).then(setFragilityData).catch(() => {});
     } catch (e: unknown) {
@@ -180,7 +187,7 @@ function App() {
         </div>
 
         {/* Build button */}
-        <div className="mb-10">
+        <div className="mb-10 flex items-center gap-6">
           <button
             onClick={handleBuild}
             disabled={loading}
@@ -213,6 +220,26 @@ function App() {
               "Build Network"
             )}
           </button>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div
+              className={`relative w-10 h-5 rounded-full transition-colors ${
+                includeMacro ? "bg-blue-600" : "bg-gray-700"
+              }`}
+              onClick={() => setIncludeMacro(!includeMacro)}
+            >
+              <div
+                className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                  includeMacro ? "translate-x-5" : ""
+                }`}
+              />
+            </div>
+            <div>
+              <div className="text-sm text-gray-300">Include macro data</div>
+              <div className="text-[10px] text-gray-600">
+                VIX, Treasury yields, Dollar index
+              </div>
+            </div>
+          </label>
           {error && <p className="mt-3 text-red-400 text-sm">{error}</p>}
         </div>
 

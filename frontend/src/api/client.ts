@@ -193,3 +193,28 @@ export async function computeFragility(
   }
   return res.json();
 }
+
+export async function buildMacroNetwork(
+  assets: string[],
+  method: string,
+  macroIndicators: string[] = ["VIX", "DGS10", "DXY"],
+  period = "1y",
+  topK = 3,
+): Promise<NetworkResponse> {
+  const res = await fetch(`${BASE}/macro/network`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      assets,
+      macro_indicators: macroIndicators,
+      period,
+      method,
+      top_k: topK,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Macro network build failed");
+  }
+  return res.json();
+}
