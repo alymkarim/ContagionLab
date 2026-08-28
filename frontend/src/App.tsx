@@ -138,10 +138,10 @@ function App() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--fg)]">
       {/* Hero */}
-      <div className="border-b border-gray-800">
-        <div className="max-w-6xl mx-auto px-6 py-16">
+      <div className="border-b border-[var(--border)]">
+        <div className="max-w-6xl mx-auto px-6 py-12">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-lg">
               C
@@ -151,16 +151,38 @@ function App() {
               <ThemeToggle />
             </div>
           </div>
-          <p className="text-gray-400 text-lg max-w-2xl leading-relaxed">
+          <p className="text-[var(--fg-muted)] text-lg max-w-2xl leading-relaxed">
             Model financial markets as networks. See how assets depend on each
             other, which ones matter most, and what happens when one crashes.
           </p>
-          <div className="flex gap-6 mt-6 text-sm text-gray-500">
-            <span>6 network methods</span>
-            <span className="text-gray-700">|</span>
-            <span>RMT noise filtering</span>
-            <span className="text-gray-700">|</span>
-            <span>Monte Carlo stress tests</span>
+        </div>
+      </div>
+
+      {/* Steps guide - always visible */}
+      <div className="border-b border-[var(--border)] bg-[var(--bg-card)]">
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <h2 className="text-sm font-semibold text-[var(--fg)] mb-6 uppercase tracking-wider">How to use this tool</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <Step
+              number="1"
+              title="Pick assets"
+              desc="Type stock or ETF tickers, or click the categories below to add them."
+            />
+            <Step
+              number="2"
+              title="Choose a method"
+              desc="Pick how to measure relationships between assets. Pearson is a good starting point."
+            />
+            <Step
+              number="3"
+              title="Build the network"
+              desc="Click Build Network. Each asset becomes a node, edges show how they move together."
+            />
+            <Step
+              number="4"
+              title="Explore results"
+              desc="Stress test, replay historical crises, check fragility, and export data."
+            />
           </div>
         </div>
       </div>
@@ -171,23 +193,23 @@ function App() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
           {/* Ticker input */}
           <div className="lg:col-span-2">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-[var(--fg)] mb-2">
               Assets
             </label>
             <input
               type="text"
               value={assets}
               onChange={(e) => setAssets(e.target.value)}
-              className="w-full rounded-lg bg-gray-900 border border-gray-700 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
+              className="w-full rounded-lg bg-[var(--bg-card)] border border-[var(--border)] px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-[var(--fg)]"
               placeholder="SPY, QQQ, NVDA, AMD, JPM"
             />
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-[var(--fg-muted)]">
               Enter stock or ETF tickers separated by commas. A{" "}
-              <strong className="text-gray-400">ticker</strong> is a 1-5 letter
+              <strong className="text-[var(--fg)]">ticker</strong> is a 1-5 letter
               code that identifies a publicly traded company or fund on the stock
-              market. For example, <span className="font-mono text-gray-400">AAPL</span> is
-              Apple, <span className="font-mono text-gray-400">SPY</span> tracks the S&P 500, and{" "}
-              <span className="font-mono text-gray-400">TLT</span> tracks long-term
+              market. For example, <span className="font-mono text-[var(--fg-muted)]">AAPL</span> is
+              Apple, <span className="font-mono text-[var(--fg-muted)]">SPY</span> tracks the S&P 500, and{" "}
+              <span className="font-mono text-[var(--fg-muted)]">TLT</span> tracks long-term
               US Treasury bonds.
             </p>
             <div className="flex flex-wrap gap-2 mt-3">
@@ -195,20 +217,20 @@ function App() {
                 <button
                   key={p.label}
                   onClick={() => setAssets(p.tickers)}
-                  className="px-3 py-1 text-xs rounded-full border border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-300 transition-colors"
+                  className="px-3 py-1 text-xs rounded-full border border-[var(--border)] text-[var(--fg-muted)] hover:border-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors"
                 >
                   {p.label}
                 </button>
               ))}
             </div>
-            <div className="mt-4 p-4 rounded-lg bg-gray-900/50 border border-gray-800">
-              <div className="text-xs font-medium text-gray-500 mb-3 uppercase tracking-wider">
+            <div className="mt-4 p-4 rounded-lg bg-[var(--bg-card)] border border-[var(--border)]">
+              <div className="text-xs font-medium text-[var(--fg-muted)] mb-3 uppercase tracking-wider">
                 Available tickers
               </div>
               <div className="space-y-3">
                 {TICKER_CATEGORIES.map((cat) => (
                   <div key={cat.name}>
-                    <div className="text-[10px] text-gray-600 mb-1">{cat.name}</div>
+                    <div className="text-[10px] text-[var(--fg-muted)] mb-1">{cat.name}</div>
                     <div className="flex flex-wrap gap-1">
                       {cat.tickers.map((t) => (
                         <button
@@ -227,7 +249,7 @@ function App() {
                               );
                             }
                           }}
-                          className="px-1.5 py-0.5 text-[10px] rounded font-mono text-gray-500 hover:bg-gray-800 hover:text-gray-300 transition-colors cursor-pointer"
+                          className="px-1.5 py-0.5 text-[10px] rounded font-mono text-[var(--fg-muted)] hover:bg-[var(--bg-card)] hover:text-[var(--fg)] transition-colors cursor-pointer"
                         >
                           {t}
                         </button>
@@ -241,7 +263,7 @@ function App() {
 
           {/* Method selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-[var(--fg)] mb-2">
               Network Method
             </label>
             <div className="space-y-2">
@@ -252,7 +274,7 @@ function App() {
                   className={`w-full text-left px-4 py-3 rounded-lg border transition-all text-sm ${
                     method === m.value
                       ? "border-blue-500 bg-blue-500/10 text-blue-400"
-                      : "border-gray-700 bg-gray-900 text-gray-400 hover:border-gray-600"
+                      : "border-[var(--border)] bg-[var(--bg-card)] text-[var(--fg-muted)] hover:border-[var(--fg-muted)]"
                   }`}
                 >
                   <div className="font-medium">{m.label}</div>
@@ -300,7 +322,7 @@ function App() {
           <label className="flex items-center gap-3 cursor-pointer">
             <div
               className={`relative w-10 h-5 rounded-full transition-colors ${
-                includeMacro ? "bg-blue-600" : "bg-gray-700"
+                includeMacro ? "bg-blue-600" : "bg-gray-600"
               }`}
               onClick={() => setIncludeMacro(!includeMacro)}
             >
@@ -311,8 +333,8 @@ function App() {
               />
             </div>
             <div>
-              <div className="text-sm text-gray-300">Include macro data</div>
-              <div className="text-[10px] text-gray-600">
+              <div className="text-sm text-[var(--fg)]">Include macro data</div>
+              <div className="text-[10px] text-[var(--fg-muted)]">
                 VIX, Treasury yields, Dollar index
               </div>
             </div>
@@ -320,10 +342,10 @@ function App() {
           {error && <p className="mt-3 text-red-400 text-sm">{error}</p>}
           {loading && (
             <div className="mt-4 w-full">
-              <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
+              <div className="h-1 w-full bg-[var(--border)] rounded-full overflow-hidden">
                 <div className="h-full bg-blue-500 rounded-full animate-progress" />
               </div>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-[var(--fg-muted)] mt-2">
                 Fetching price data and building network...
               </p>
             </div>
@@ -334,7 +356,7 @@ function App() {
         {data && (
           <div className="space-y-8">
             {/* Stats bar */}
-            <div className="flex flex-wrap items-center gap-8 py-4 border-y border-gray-800">
+            <div className="flex flex-wrap items-center gap-8 py-4 border-y border-[var(--border)]">
               <Stat label="Assets" value={data.num_nodes} />
               <Stat label="Connections" value={data.num_edges} />
               <Stat label="Density" value={density.toFixed(3)} />
@@ -371,55 +393,53 @@ function App() {
           </div>
         )}
 
-        {/* How it works */}
+        {/* References */}
         {!data && !loading && (
-          <div className="mt-16 border-t border-gray-800 pt-12">
-            <h2 className="text-2xl font-bold mb-8">How it works</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <Step
-                number="1"
-                title="Pick assets"
-                desc="Type in stock or ETF tickers, whatever you want to analyze. The tool pulls price data from Yahoo Finance."
+          <div className="mt-12 border-t border-[var(--border)] pt-10">
+            <h2 className="text-lg font-semibold text-[var(--fg)] mb-6">References</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <RefCard
+                authors="Laloux, Cizeau, Bouchaud, Potters"
+                year="1999"
+                title="Noise Dressing of Financial Correlation Matrices"
+                journal="Physical Review Letters"
+                url="https://doi.org/10.1103/PhysRevE.59.6573"
               />
-              <Step
-                number="2"
-                title="Build the network"
-                desc="Each asset becomes a node. Edges are drawn between assets that move together. The stronger the relationship, the thicker the edge."
+              <RefCard
+                authors="Mantegna, Stanley"
+                year="2000"
+                title="An Introduction to Econophysics"
+                journal="Cambridge University Press"
+                url="https://doi.org/10.1017/CBO9780511752414"
               />
-              <Step
-                number="3"
-                title="Stress test"
-                desc="Pick an asset to 'crash' and see how the shock ripples through the network. Monte Carlo simulation runs thousands of scenarios."
+              <RefCard
+                authors="Granger"
+                year="1969"
+                title="Investigating Causal Relations by Econometric Models and Cross-Spectral Methods"
+                journal="Econometrica"
+                url="https://doi.org/10.1016/0304-4076(69)90002-6"
               />
-              <Step
-                number="4"
-                title="Replay crises"
-                desc="Compare your portfolio's network before, during, and after 2008, 2020, or 2022. See if it would have held up."
+              <RefCard
+                authors="Friedman, Kraus, Vedman"
+                year="2008"
+                title="Financial Shocks and Systemic Risk in Cross-Asset Correlations"
+                journal="American Economic Review"
+                url="https://doi.org/10.1257/aer.98.5.2093"
               />
-            </div>
-            <div className="mt-10 p-5 rounded-lg bg-gray-900 border border-gray-800 text-sm text-gray-400 leading-relaxed space-y-3">
-              <p>
-                <strong className="text-gray-300">What's under the hood.</strong>{" "}
-                This project borrows from statistical physics. Random Matrix Theory
-                (Laloux et al. 1999) filters noise out of correlation matrices —
-                the same technique physicists use to separate signal from noise in
-                nuclear spectra. Monte Carlo simulation models shock propagation
-                through the network.
-              </p>
-              <p>
-                The fragility index combines network density, clustering, spectral
-                gap, and volatility into a single score. Similar to an order
-                parameter in a phase transition. When fragility spikes, the network
-                is about to undergo a regime change.
-              </p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2 text-xs text-gray-600">
-                <a href="https://doi.org/10.1103/PhysRevE.59.6573" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 underline decoration-gray-800">Laloux et al. (1999)</a>
-                <a href="https://doi.org/10.1017/CBO9780511752414" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 underline decoration-gray-800">Mantegna &amp; Stanley (2000)</a>
-                <a href="https://doi.org/10.1016/0304-4076(69)90002-6" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 underline decoration-gray-800">Granger (1969)</a>
-                <a href="https://doi.org/10.1257/aer.98.5.2093" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 underline decoration-gray-800">Friedman et al. (2008)</a>
-                <a href="https://doi.org/10.1007/978-1-4612-2294-3" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 underline decoration-gray-800">Joe (1997)</a>
-                <a href="https://doi.org/10.1016/j.jfineco.2012.08.003" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 underline decoration-gray-800">Billio et al. (2012)</a>
-              </div>
+              <RefCard
+                authors="Joe"
+                year="1997"
+                title="Multivariate Models and Dependence Concepts"
+                journal="Chapman & Hall"
+                url="https://doi.org/10.1007/978-1-4612-2294-3"
+              />
+              <RefCard
+                authors="Billio, Getmansky, Lo, Pelizzon"
+                year="2012"
+                title="Measuring Systemic Risk in the Finance and Insurance Sectors"
+                journal="Journal of Financial Economics"
+                url="https://doi.org/10.1016/j.jfineco.2012.08.003"
+              />
             </div>
           </div>
         )}
@@ -437,8 +457,8 @@ function Stat({
 }) {
   return (
     <div>
-      <div className="text-xl font-bold">{value}</div>
-      <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">
+      <div className="text-xl font-bold text-[var(--fg)]">{value}</div>
+      <div className="text-xs text-[var(--fg-muted)] uppercase tracking-wider mt-1">
         {label}
       </div>
     </div>
@@ -459,9 +479,40 @@ function Step({
       <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-sm font-bold mb-3">
         {number}
       </div>
-      <h3 className="font-medium text-gray-200 mb-2">{title}</h3>
-      <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
+      <h3 className="font-medium text-[var(--fg)] mb-2">{title}</h3>
+      <p className="text-sm text-[var(--fg-muted)] leading-relaxed">{desc}</p>
     </div>
+  );
+}
+
+function RefCard({
+  authors,
+  year,
+  title,
+  journal,
+  url,
+}: {
+  authors: string;
+  year: string;
+  title: string;
+  journal: string;
+  url: string;
+}) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block p-4 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] hover:border-blue-500/50 transition-colors group"
+    >
+      <div className="text-xs text-[var(--fg-muted)] mb-1">
+        {authors} ({year})
+      </div>
+      <div className="text-sm text-[var(--fg)] font-medium group-hover:text-blue-400 transition-colors leading-snug">
+        {title}
+      </div>
+      <div className="text-xs text-[var(--fg-muted)] mt-1 italic">{journal}</div>
+    </a>
   );
 }
 

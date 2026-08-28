@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import type { NetworkResponse } from "../api/client";
 
 interface Props {
@@ -52,18 +52,20 @@ function percentileRank(values: number[], target: number): number {
 
 export default function NetworkGraph({ data }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<SimNode[]>([]);
   const rafRef = useRef<number>(0);
 
-  useEffect(() => {
+  const draw = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const width = 700;
-    const height = 500;
+    const width = container.clientWidth;
+    const height = Math.max(400, Math.min(500, width * 0.65));
     canvas.width = width;
     canvas.height = height;
 
@@ -76,8 +78,8 @@ export default function NetworkGraph({ data }: Props) {
       const pct = percentileRank(importanceValues, importance);
       return {
         id: n.id,
-        x: width / 2 + (Math.random() - 0.5) * 300,
-        y: height / 2 + (Math.random() - 0.5) * 200,
+        x: width / 2 + (Math.random() - 0.5) * width * 0.5,
+        y: height / 2 + (Math.random() - 0.5) * height * 0.4,
         vx: 0,
         vy: 0,
         importance,
@@ -194,11 +196,18 @@ export default function NetworkGraph({ data }: Props) {
     };
   }, [data]);
 
+  useEffect(() => {
+    const cleanup = draw();
+    return cleanup;
+  }, [draw]);
+
   return (
-    <canvas
-      ref={canvasRef}
-      className="rounded border border-gray-700"
-      style={{ width: 700, height: 500 }}
-    />
+    <div ref={containerRef} className="w-full">
+      <canvas
+        ref={canvasRef}
+        className="rounded border border-gray-700 w-full"
+        style={{ height: 450 }}
+      />
+    </div>
   );
 }
