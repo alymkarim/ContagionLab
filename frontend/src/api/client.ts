@@ -144,7 +144,8 @@ export async function fetchAssets(): Promise<AssetUniverse> {
 export async function listCrises(): Promise<CrisisInfo[]> {
   const res = await fetch(`${BASE}/crisis/list`);
   if (!res.ok) throw new Error("Failed to fetch crises");
-  return res.json();
+  const data = await res.json();
+  return data.crises;
 }
 
 export async function analyzeCrisis(
