@@ -9,16 +9,16 @@ using a linear threshold model with Monte Carlo noise.
 import networkx as nx
 from fastapi import APIRouter, HTTPException
 
-from backend.app.models.schemas import StressTestRequest
-from backend.app.services.data_fetcher import fetch_prices, get_returns
-from backend.app.services.network_builder import (
+from app.models.schemas import StressTestRequest
+from app.services.data_fetcher import fetch_prices, get_returns
+from app.services.network_builder import (
     build_pearson_network,
     build_spearman_network,
     build_partial_correlation_network,
     build_graphical_lasso_network,
     build_granger_causality_network,
 )
-from backend.app.services.simulation import run_stress_test
+from app.services.simulation import run_stress_test
 
 router = APIRouter(prefix="/api/stress-test", tags=["stress-test"])
 

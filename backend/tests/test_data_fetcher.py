@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from backend.app.services.data_fetcher import fetch_prices, get_returns
+from app.services.data_fetcher import fetch_prices, get_returns
 
 
 def test_fetch_prices_returns_dataframe():

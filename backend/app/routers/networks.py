@@ -10,21 +10,21 @@ and systemic-importance metrics.
 import networkx as nx
 from fastapi import APIRouter, HTTPException
 
-from backend.app.models.schemas import NetworkBuildRequest
-from backend.app.services.analysis import (
+from app.models.schemas import NetworkBuildRequest
+from app.services.analysis import (
     compute_centrality,
     compute_systemic_importance,
     detect_communities,
 )
-from backend.app.services.data_fetcher import fetch_prices, get_returns
-from backend.app.services.network_builder import (
+from app.services.data_fetcher import fetch_prices, get_returns
+from app.services.network_builder import (
     build_granger_causality_network,
     build_graphical_lasso_network,
     build_partial_correlation_network,
     build_pearson_network,
     build_spearman_network,
 )
-from backend.app.services.rmt_filter import filter_correlation_matrix
+from app.services.rmt_filter import filter_correlation_matrix
 
 router = APIRouter(prefix="/api/networks", tags=["networks"])
 
@@ -136,7 +136,7 @@ def build_network(req: NetworkBuildRequest):
         t = returns.shape[0]
         filtered_corr = filter_correlation_matrix(corr, t)
 
-        from backend.app.services.network_builder import correlation_to_network
+        from app.services.network_builder import correlation_to_network
 
         G = correlation_to_network(
             filtered_corr,

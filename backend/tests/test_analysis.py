@@ -4,7 +4,7 @@ import networkx as nx
 import numpy as np
 import pytest
 
-from backend.app.services.analysis import (
+from app.services.analysis import (
     compute_centrality,
     compute_systemic_importance,
     detect_communities,
