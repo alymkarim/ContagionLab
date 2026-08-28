@@ -1,13 +1,17 @@
 import { useState } from "react";
 import {
   buildNetwork,
+  computeFragility,
   type NetworkResponse,
   type StressTestResponse,
+  type FragilityResponse,
 } from "./api/client";
 import NetworkGraph from "./components/NetworkGraph";
 import MetricsPanel from "./components/MetricsPanel";
 import StressTestPanel from "./components/StressTestPanel";
 import StressTestResults from "./components/StressTestResults";
+import CrisisReplay from "./components/CrisisReplay";
+import FragilityGauge from "./components/FragilityGauge";
 
 const METHODS = [
   {
@@ -35,6 +39,11 @@ const METHODS = [
     label: "Granger Causality",
     desc: "Predictive relationships. \"A helps predict B\" — directed edges.",
   },
+  {
+    value: "tail_dependence",
+    label: "Tail Dependence",
+    desc: "Extreme co-movement. How likely are assets to crash together in the tails?",
+  },
 ];
 
 const EXAMPLE_PORTFOLIOS = [
@@ -52,6 +61,8 @@ function App() {
   const [data, setData] = useState<NetworkResponse | null>(null);
   const [stressResults, setStressResults] =
     useState<StressTestResponse | null>(null);
+  const [fragilityData, setFragilityData] =
+    useState<FragilityResponse | null>(null);
 
   const handleBuild = async () => {
     const assetList = assets
@@ -65,9 +76,11 @@ function App() {
     setLoading(true);
     setError(null);
     setStressResults(null);
+    setFragilityData(null);
     try {
       const res = await buildNetwork(assetList, method);
       setData(res);
+      computeFragility(assetList).then(setFragilityData).catch(() => {});
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Request failed");
     } finally {
@@ -95,7 +108,7 @@ function App() {
             other, which ones matter most, and what happens when one crashes.
           </p>
           <div className="flex gap-6 mt-6 text-sm text-gray-500">
-            <span>5 network methods</span>
+            <span>6 network methods</span>
             <span className="text-gray-700">|</span>
             <span>RMT noise filtering</span>
             <span className="text-gray-700">|</span>
@@ -229,6 +242,15 @@ function App() {
                 {stressResults && <StressTestResults data={stressResults} />}
               </div>
             </div>
+
+            {/* Fragility + Crisis Replay */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {fragilityData && <FragilityGauge data={fragilityData} />}
+              <CrisisReplay
+                assets={data.graph.nodes.map((n) => n.id)}
+                method={data.method}
+              />
+            </div>
           </div>
         )}
 
@@ -236,7 +258,7 @@ function App() {
         {!data && !loading && (
           <div className="mt-16 border-t border-gray-800 pt-12">
             <h2 className="text-2xl font-bold mb-8">How it works</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <Step
                 number="1"
                 title="Pick assets"
@@ -251,6 +273,11 @@ function App() {
                 number="3"
                 title="Stress test"
                 desc="Simulate a crash in one asset and see how the shock propagates through the network."
+              />
+              <Step
+                number="4"
+                title="Replay crises"
+                desc="See how your portfolio's network changed during 2008, 2020, or 2022. Track fragility over time."
               />
             </div>
             <div className="mt-10 p-5 rounded-lg bg-gray-900 border border-gray-800 text-sm text-gray-400 leading-relaxed">

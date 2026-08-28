@@ -49,6 +49,38 @@ export interface AssetUniverse {
   [sector: string]: Record<string, string>;
 }
 
+export interface CrisisInfo {
+  id: string;
+  name: string;
+  start: string;
+  end: string;
+  description: string;
+}
+
+export interface CrisisAnalysisResponse {
+  crisis: string;
+  method: string;
+  phases: {
+    pre: NetworkResponse;
+    during: NetworkResponse;
+    post: NetworkResponse;
+  };
+  comparison: {
+    density_change: number;
+    clustering_change: number;
+    interpretation: string;
+  };
+}
+
+export interface FragilityResponse {
+  summary: {
+    current_score: number;
+    regime: string;
+    trend: string;
+  };
+  history: { date: string; score: number }[];
+}
+
 const BASE = "/api";
 
 export async function buildNetwork(
@@ -106,4 +138,58 @@ export async function fetchAssets(): Promise<AssetUniverse> {
   if (!res.ok) throw new Error("Failed to fetch assets");
   const data = await res.json();
   return data.universe;
+}
+
+export async function listCrises(): Promise<CrisisInfo[]> {
+  const res = await fetch(`${BASE}/crisis/list`);
+  if (!res.ok) throw new Error("Failed to fetch crises");
+  return res.json();
+}
+
+export async function analyzeCrisis(
+  assets: string[],
+  crisisId: string,
+  method = "pearson",
+  topK = 3,
+): Promise<CrisisAnalysisResponse> {
+  const res = await fetch(`${BASE}/crisis/analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      assets,
+      crisis_id: crisisId,
+      method,
+      top_k: topK,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Crisis analysis failed");
+  }
+  return res.json();
+}
+
+export async function computeFragility(
+  assets: string[],
+  period = "1y",
+  window = 21,
+  method = "pearson",
+  topK = 3,
+): Promise<FragilityResponse> {
+  const res = await fetch(`${BASE}/fragility/compute`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      assets,
+      period,
+      window,
+      method,
+      top_k: topK,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Fragility computation failed");
+  }
+  return res.json();
 }
