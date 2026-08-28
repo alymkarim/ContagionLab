@@ -48,10 +48,44 @@ const METHODS = [
 ];
 
 const EXAMPLE_PORTFOLIOS = [
-  { label: "Tech", tickers: "AAPL, MSFT, NVDA, GOOGL, META" },
-  { label: "S&P 500 Core", tickers: "SPY, QQQ, IWM, DIA, VTI" },
-  { label: "Risk Parity", tickers: "SPY, TLT, GLD, UUP, DBC" },
-  { label: "Banks", tickers: "JPM, BAC, GS, MS, C" },
+  { label: "Tech", tickers: "AAPL, MSFT, NVDA, GOOGL, META, AMZN, TSLA" },
+  { label: "S&P 500 Core", tickers: "SPY, QQQ, IWM, DIA, VTI, VOO" },
+  { label: "Risk Parity", tickers: "SPY, TLT, GLD, UUP, DBC, IEF" },
+  { label: "Banks", tickers: "JPM, BAC, GS, MS, C, WFC, BLK" },
+  { label: "Energy", tickers: "XOM, CVX, COP, SLB, EOG, MPC" },
+  { label: "Healthcare", tickers: "JNJ, UNH, PFE, ABBV, MRK, TMO" },
+  { label: "Crypto-adjacent", tickers: "COIN, MSTR, MARA, RIOT, GLD, SPY" },
+  { label: "Defensive", tickers: "XLU, XLP, TLT, GLD, VPU, PG, KO" },
+];
+
+const TICKER_CATEGORIES = [
+  {
+    name: "US Equities",
+    tickers: [
+      "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA", "BRK.B",
+      "JPM", "V", "UNH", "JNJ", "XOM", "PG", "MA", "HD", "CVX", "MRK",
+      "ABBV", "LLY", "PEP", "COST", "KO", "AVGO", "WMT", "MCD", "CSCO",
+      "ACN", "TMO", "ABT", "DHR", "NEE", "LIN", "TXN", "PM", "UPS",
+      "RTX", "LOW", "HON", "INTC", "AMGN", "IBM", "QCOM", "SPGI",
+      "GE", "CAT", "BA", "GS", "BLK", "AXP", "MS", "C",
+    ],
+  },
+  {
+    name: "ETFs",
+    tickers: [
+      "SPY", "QQQ", "IWM", "DIA", "VTI", "VOO", "VEA", "VWO",
+      "TLT", "IEF", "SHY", "LQD", "HYG", "AGG", "BND", "GLD", "SLV",
+      "USO", "XLE", "XLF", "XLK", "XLV", "XLI", "XLP", "XLU", "XLRE",
+      "DBC", "UUP", "FXE", "FXY", "EEM", "EFA", "VTV", "VUG",
+    ],
+  },
+  {
+    name: "Macro Indicators",
+    tickers: [
+      "VIX (^VIX)", "10Y Treasury (^TNX)", "Dollar Index (DX-Y.NYB)",
+      "Gold Futures (GC=F)", "Oil Futures (CL=F)", "2Y Treasury (^IRX)",
+    ],
+  },
 ];
 
 function App() {
@@ -159,6 +193,42 @@ function App() {
                   {p.label}
                 </button>
               ))}
+            </div>
+            <div className="mt-4 p-4 rounded-lg bg-gray-900/50 border border-gray-800">
+              <div className="text-xs font-medium text-gray-500 mb-3 uppercase tracking-wider">
+                Available tickers
+              </div>
+              <div className="space-y-3">
+                {TICKER_CATEGORIES.map((cat) => (
+                  <div key={cat.name}>
+                    <div className="text-[10px] text-gray-600 mb-1">{cat.name}</div>
+                    <div className="flex flex-wrap gap-1">
+                      {cat.tickers.map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => {
+                            const current = assets
+                              .split(",")
+                              .map((a) => a.trim().toUpperCase())
+                              .filter(Boolean);
+                            const clean = t.split(" ")[0];
+                            if (!current.includes(clean)) {
+                              setAssets(
+                                current.length > 0
+                                  ? assets + ", " + clean
+                                  : clean,
+                              );
+                            }
+                          }}
+                          className="px-1.5 py-0.5 text-[10px] rounded font-mono text-gray-500 hover:bg-gray-800 hover:text-gray-300 transition-colors cursor-pointer"
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -289,30 +359,47 @@ function App() {
               <Step
                 number="1"
                 title="Pick assets"
-                desc="Choose stocks or ETFs you want to analyze. The tool downloads their price history."
+                desc="Type in stock or ETF tickers — whatever you want to analyze. The tool pulls price data from Yahoo Finance."
               />
               <Step
                 number="2"
                 title="Build the network"
-                desc="Each asset becomes a node. Edges represent statistical relationships — how much they move together."
+                desc="Each asset becomes a node. Edges are drawn between assets that move together — the stronger the relationship, the thicker the edge."
               />
               <Step
                 number="3"
                 title="Stress test"
-                desc="Simulate a crash in one asset and see how the shock propagates through the network."
+                desc="Pick an asset to 'crash' and see how the shock ripples through the network. Monte Carlo simulation runs thousands of scenarios."
               />
               <Step
                 number="4"
                 title="Replay crises"
-                desc="See how your portfolio's network changed during 2008, 2020, or 2022. Track fragility over time."
+                desc="Compare your portfolio's network before, during, and after 2008, 2020, or 2022. See if it would have held up."
               />
             </div>
-            <div className="mt-10 p-5 rounded-lg bg-gray-900 border border-gray-800 text-sm text-gray-400 leading-relaxed">
-              <strong className="text-gray-300">Under the hood:</strong> This
-              project uses techniques from physics — Random Matrix Theory to
-              filter noise from correlation matrices, and Monte Carlo simulation
-              to model shock propagation. It's the same math that won physicists
-              the Nobel Prize in Economics (2024, among others).
+            <div className="mt-10 p-5 rounded-lg bg-gray-900 border border-gray-800 text-sm text-gray-400 leading-relaxed space-y-3">
+              <p>
+                <strong className="text-gray-300">What's under the hood.</strong>{" "}
+                This project borrows from statistical physics. Random Matrix Theory
+                (Laloux et al. 1999) filters noise out of correlation matrices —
+                the same technique physicists use to separate signal from noise in
+                nuclear spectra. Monte Carlo simulation models shock propagation
+                through the network.
+              </p>
+              <p>
+                The fragility index combines network density, clustering, spectral
+                gap, and volatility into a single score — similar to an order
+                parameter in a phase transition. When fragility spikes, the network
+                is about to undergo a regime change.
+              </p>
+              <div className="flex flex-wrap gap-x-6 gap-y-1 pt-2 text-xs text-gray-600">
+                <span>Laloux et al. (1999)</span>
+                <span>Mantegna &amp; Stanley (2000)</span>
+                <span>Granger (1969)</span>
+                <span>Friedman et al. (2008)</span>
+                <span>Joe (1997)</span>
+                <span>Billio et al. (2012)</span>
+              </div>
             </div>
           </div>
         )}
