@@ -1,0 +1,24 @@
+# Backend FastAPI application with CORS middleware and health endpoint
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+# Create FastAPI application instance
+app = FastAPI(title="ContagionLab API", version="0.1.0")
+
+# Configure CORS to allow all origins for development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/health")
+def health_check():
+    """
+    Health check endpoint to verify API is running.
+    Returns a simple status dictionary.
+    """
+    return {"status": "ok"}
