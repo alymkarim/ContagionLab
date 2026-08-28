@@ -42,18 +42,20 @@ export default function MiniNetworkGraph({ data }: Props) {
     const { graph, metrics } = data;
 
     const colorMap = new Map<string, string>();
-    Object.entries(metrics.communities.assignment).forEach(([node, comm]) => {
+    const assignment = metrics?.communities?.assignment ?? {};
+    Object.entries(assignment).forEach(([node, comm]) => {
       colorMap.set(
         node,
         COMMUNITY_COLORS[(comm as number) % COMMUNITY_COLORS.length],
       );
     });
 
-    const importanceValues = Object.values(metrics.systemic_importance);
-    const maxImportance = Math.max(...importanceValues, 0.01);
+    const systemicImportance = metrics?.systemic_importance ?? {};
+    const importanceValues = Object.values(systemicImportance);
+    const maxImportance = importanceValues.length > 0 ? Math.max(...importanceValues, 0.01) : 1;
 
     const nodes: SimNode[] = graph.nodes.map((n) => {
-      const importance = metrics.systemic_importance[n.id] ?? 0;
+      const importance = systemicImportance[n.id] ?? 0;
       return {
         id: n.id,
         x: width / 2 + (Math.random() - 0.5) * 120,
