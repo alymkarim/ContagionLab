@@ -2,6 +2,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.app.routers.assets import router as assets_router
+
 # Create FastAPI application instance
 app = FastAPI(title="ContagionLab API", version="0.1.0")
 
@@ -13,6 +15,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register routers
+app.include_router(assets_router)
 
 
 @app.get("/health")
