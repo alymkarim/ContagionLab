@@ -74,11 +74,12 @@ export interface CrisisAnalysisResponse {
 
 export interface FragilityResponse {
   summary: {
-    current_score: number;
+    current_fragility: number;
+    mean_fragility: number;
     regime: string;
     trend: string;
   };
-  history: { date: string; score: number }[];
+  history: { date: string; fragility: number; density: number; clustering: number; volatility: number }[];
 }
 
 const BASE = "/api";

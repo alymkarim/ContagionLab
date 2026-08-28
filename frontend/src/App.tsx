@@ -13,12 +13,14 @@ import StressTestPanel from "./components/StressTestPanel";
 import StressTestResults from "./components/StressTestResults";
 import CrisisReplay from "./components/CrisisReplay";
 import FragilityGauge from "./components/FragilityGauge";
+import ExportPanel from "./components/ExportPanel";
+import ThemeToggle from "./components/ThemeToggle";
 
 const METHODS = [
   {
     value: "pearson",
     label: "Pearson",
-    desc: "Linear correlation — the baseline. Measures how two assets move together.",
+    desc: "Linear correlation. The baseline. Measures how two assets move together.",
   },
   {
     value: "spearman",
@@ -38,7 +40,7 @@ const METHODS = [
   {
     value: "granger_causality",
     label: "Granger Causality",
-    desc: "Predictive relationships. \"A helps predict B\" — directed edges.",
+    desc: "Predictive relationships. \"A helps predict B\". Directed edges.",
   },
   {
     value: "tail_dependence",
@@ -121,7 +123,9 @@ function App() {
         res = await buildNetwork(assetList, method);
       }
       setData(res);
-      computeFragility(assetList).then(setFragilityData).catch(() => {});
+      computeFragility(assetList)
+        .then(setFragilityData)
+        .catch((err) => console.warn("Fragility computation failed:", err));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Request failed");
     } finally {
@@ -143,6 +147,9 @@ function App() {
               C
             </div>
             <h1 className="text-4xl font-bold tracking-tight">ContagionLab</h1>
+            <div className="ml-auto">
+              <ThemeToggle />
+            </div>
           </div>
           <p className="text-gray-400 text-lg max-w-2xl leading-relaxed">
             Model financial markets as networks. See how assets depend on each
@@ -311,17 +318,30 @@ function App() {
             </div>
           </label>
           {error && <p className="mt-3 text-red-400 text-sm">{error}</p>}
+          {loading && (
+            <div className="mt-4 w-full">
+              <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500 rounded-full animate-progress" />
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Fetching price data and building network...
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Results */}
         {data && (
           <div className="space-y-8">
             {/* Stats bar */}
-            <div className="flex gap-8 py-4 border-y border-gray-800">
+            <div className="flex flex-wrap items-center gap-8 py-4 border-y border-gray-800">
               <Stat label="Assets" value={data.num_nodes} />
               <Stat label="Connections" value={data.num_edges} />
               <Stat label="Density" value={density.toFixed(3)} />
               <Stat label="Method" value={data.method} />
+              <div className="ml-auto">
+                <ExportPanel data={data} stressResults={stressResults} />
+              </div>
             </div>
 
             {/* Graph + panels */}
@@ -359,12 +379,12 @@ function App() {
               <Step
                 number="1"
                 title="Pick assets"
-                desc="Type in stock or ETF tickers — whatever you want to analyze. The tool pulls price data from Yahoo Finance."
+                desc="Type in stock or ETF tickers, whatever you want to analyze. The tool pulls price data from Yahoo Finance."
               />
               <Step
                 number="2"
                 title="Build the network"
-                desc="Each asset becomes a node. Edges are drawn between assets that move together — the stronger the relationship, the thicker the edge."
+                desc="Each asset becomes a node. Edges are drawn between assets that move together. The stronger the relationship, the thicker the edge."
               />
               <Step
                 number="3"
@@ -388,17 +408,17 @@ function App() {
               </p>
               <p>
                 The fragility index combines network density, clustering, spectral
-                gap, and volatility into a single score — similar to an order
+                gap, and volatility into a single score. Similar to an order
                 parameter in a phase transition. When fragility spikes, the network
                 is about to undergo a regime change.
               </p>
-              <div className="flex flex-wrap gap-x-6 gap-y-1 pt-2 text-xs text-gray-600">
-                <span>Laloux et al. (1999)</span>
-                <span>Mantegna &amp; Stanley (2000)</span>
-                <span>Granger (1969)</span>
-                <span>Friedman et al. (2008)</span>
-                <span>Joe (1997)</span>
-                <span>Billio et al. (2012)</span>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2 text-xs text-gray-600">
+                <a href="https://doi.org/10.1103/PhysRevE.59.6573" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 underline decoration-gray-800">Laloux et al. (1999)</a>
+                <a href="https://doi.org/10.1017/CBO9780511752414" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 underline decoration-gray-800">Mantegna &amp; Stanley (2000)</a>
+                <a href="https://doi.org/10.1016/0304-4076(69)90002-6" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 underline decoration-gray-800">Granger (1969)</a>
+                <a href="https://doi.org/10.1257/aer.98.5.2093" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 underline decoration-gray-800">Friedman et al. (2008)</a>
+                <a href="https://doi.org/10.1007/978-1-4612-2294-3" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 underline decoration-gray-800">Joe (1997)</a>
+                <a href="https://doi.org/10.1016/j.jfineco.2012.08.003" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 underline decoration-gray-800">Billio et al. (2012)</a>
               </div>
             </div>
           </div>

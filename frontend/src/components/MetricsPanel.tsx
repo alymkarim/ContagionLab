@@ -85,7 +85,7 @@ export default function MetricsPanel({ data }: Props) {
           Eigenvector Centrality
         </h3>
         <p className="text-[10px] text-gray-600 mb-4">
-          Connection to other important nodes — not just "who do you know" but
+          Connection to other important nodes. Not just "who do you know" but
           "who do your contacts know"
         </p>
         <div className="space-y-2.5">

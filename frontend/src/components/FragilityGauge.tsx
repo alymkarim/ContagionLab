@@ -62,7 +62,7 @@ export default function FragilityGauge({ data }: Props) {
     ctx.fillStyle = "#111827";
     ctx.fillRect(0, 0, width, height);
 
-    const values = history.map((h) => h.score);
+    const values = history.map((h) => h.fragility);
     const min = Math.min(...values);
     const max = Math.max(...values);
     const range = Math.max(max - min, 0.01);
@@ -73,7 +73,7 @@ export default function FragilityGauge({ data }: Props) {
       y: pad + (1 - (v - min) / range) * (height - 2 * pad),
     }));
 
-    const color = scoreColor(summary.current_score);
+    const color = scoreColor(summary.current_fragility);
 
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
@@ -107,9 +107,9 @@ export default function FragilityGauge({ data }: Props) {
         <div>
           <div
             className="text-4xl font-bold font-mono"
-            style={{ color: scoreColor(summary.current_score) }}
+            style={{ color: scoreColor(summary.current_fragility) }}
           >
-            {(summary.current_score * 100).toFixed(0)}
+            {(summary.current_fragility * 100).toFixed(0)}
           </div>
           <div className="text-[10px] text-gray-600 uppercase tracking-wider mt-1">
             Current Score

@@ -64,7 +64,7 @@ export default function StressTestPanel({ assets, method, onResults }: Props) {
           <div className="flex items-center justify-between mb-1.5">
             <label className="text-xs text-gray-500">How bad?</label>
             <span className="text-xs text-gray-400">
-              {magnitude.toFixed(0)}% — {magnitudeLabel}
+              {magnitude.toFixed(0)}% ({magnitudeLabel})
             </span>
           </div>
           <input
