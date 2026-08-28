@@ -4,7 +4,7 @@ import numpy as np
 import networkx as nx
 import pytest
 
-from backend.app.services.simulation import run_stress_test
+from app.services.simulation import run_stress_test
 
 
 def _make_test_network() -> nx.Graph:

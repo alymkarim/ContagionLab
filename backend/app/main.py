@@ -2,9 +2,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.app.routers.assets import router as assets_router
-from backend.app.routers.networks import router as networks_router
-from backend.app.routers.stress_test import router as stress_test_router
+from app.routers.assets import router as assets_router
+from app.routers.networks import router as networks_router
+from app.routers.stress_test import router as stress_test_router
 
 # Create FastAPI application instance
 app = FastAPI(title="ContagionLab API", version="0.1.0")

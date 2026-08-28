@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from backend.app.services.rmt_filter import compute_mp_upper_bound, filter_correlation_matrix
+from app.services.rmt_filter import compute_mp_upper_bound, filter_correlation_matrix
 
 
 def test_mp_upper_bound():

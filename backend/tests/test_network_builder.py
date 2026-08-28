@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from backend.app.services.network_builder import (
+from app.services.network_builder import (
     build_pearson_network,
     build_spearman_network,
     build_partial_correlation_network,
