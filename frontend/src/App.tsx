@@ -1,6 +1,12 @@
 import { useState } from "react";
-import { buildNetwork, type NetworkResponse } from "./api/client";
+import {
+  buildNetwork,
+  type NetworkResponse,
+  type StressTestResponse,
+} from "./api/client";
 import NetworkGraph from "./components/NetworkGraph";
+import StressTestPanel from "./components/StressTestPanel";
+import StressTestResults from "./components/StressTestResults";
 
 const METHODS = [
   { value: "pearson", label: "Pearson" },
@@ -16,6 +22,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<NetworkResponse | null>(null);
+  const [stressResults, setStressResults] = useState<StressTestResponse | null>(null);
 
   const handleBuild = async () => {
     const assetList = assets
@@ -91,10 +98,18 @@ function App() {
       {data && (
         <div className="mt-8 flex flex-col lg:flex-row gap-6">
           <NetworkGraph data={data} />
-          <div className="grid grid-cols-1 gap-4 min-w-[200px]">
-            <Card label="Nodes" value={data.num_nodes} />
-            <Card label="Edges" value={data.num_edges} />
-            <Card label="Density" value={density.toFixed(3)} />
+          <div className="flex flex-col gap-4 min-w-[200px] max-w-[700px]">
+            <div className="grid grid-cols-3 gap-4">
+              <Card label="Nodes" value={data.num_nodes} />
+              <Card label="Edges" value={data.num_edges} />
+              <Card label="Density" value={density.toFixed(3)} />
+            </div>
+            <StressTestPanel
+              assets={data.graph.nodes.map((n) => n.id)}
+              method={data.method}
+              onResults={setStressResults}
+            />
+            {stressResults && <StressTestResults data={stressResults} />}
           </div>
         </div>
       )}
