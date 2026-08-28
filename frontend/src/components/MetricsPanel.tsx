@@ -7,17 +7,15 @@ interface Props {
 export default function MetricsPanel({ data }: Props) {
   const { centrality, communities, systemic_importance } = data.metrics;
 
-  // Sort nodes by eigenvector centrality (most important first)
-  const byCentrality = Object.entries(centrality)
-    .sort(([, a], [, b]) => b.eigenvector - a.eigenvector)
-    .slice(0, 8);
-
-  // Sort by systemic importance
   const bySystemic = Object.entries(systemic_importance)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 8);
+    .slice(0, 6);
 
-  // Group nodes by community using assignment map
+  const byCentrality = Object.entries(centrality)
+    .sort(([, a], [, b]) => b.eigenvector - a.eigenvector)
+    .slice(0, 6);
+
+  // Group nodes by community
   const communityGroups: Record<number, string[]> = {};
   Object.entries(communities.assignment).forEach(([node, comm]) => {
     const c = comm as number;
@@ -28,23 +26,23 @@ export default function MetricsPanel({ data }: Props) {
   return (
     <div className="space-y-4">
       {/* Systemic Importance */}
-      <div className="rounded bg-gray-800 border border-gray-700 p-4">
-        <h3 className="text-sm font-medium text-gray-400 mb-3">
+      <div className="rounded-lg border border-gray-700 bg-gray-900 p-5">
+        <h3 className="text-sm font-medium text-gray-300 mb-4">
           Systemic Importance
         </h3>
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {bySystemic.map(([node, score]) => (
-            <div key={node} className="flex items-center gap-2">
-              <span className="text-xs font-mono w-12 text-gray-300">
+            <div key={node} className="flex items-center gap-2.5">
+              <span className="text-xs font-mono w-10 text-gray-400">
                 {node}
               </span>
-              <div className="flex-1 h-2 bg-gray-700 rounded overflow-hidden">
+              <div className="flex-1 h-1.5 bg-gray-800 rounded overflow-hidden">
                 <div
-                  className="h-full bg-blue-500 rounded"
+                  className="h-full bg-blue-500/80 rounded"
                   style={{ width: `${score * 100}%` }}
                 />
               </div>
-              <span className="text-xs text-gray-500 w-10 text-right">
+              <span className="text-[10px] text-gray-600 w-8 text-right">
                 {(score * 100).toFixed(0)}%
               </span>
             </div>
@@ -52,47 +50,25 @@ export default function MetricsPanel({ data }: Props) {
         </div>
       </div>
 
-      {/* Eigenvector Centrality */}
-      <div className="rounded bg-gray-800 border border-gray-700 p-4">
-        <h3 className="text-sm font-medium text-gray-400 mb-3">
-          Eigenvector Centrality
-        </h3>
-        <div className="space-y-2">
-          {byCentrality.map(([node, c]) => (
-            <div key={node} className="flex items-center gap-2">
-              <span className="text-xs font-mono w-12 text-gray-300">
-                {node}
-              </span>
-              <div className="flex-1 h-2 bg-gray-700 rounded overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 rounded"
-                  style={{ width: `${c.eigenvector * 100}%` }}
-                />
-              </div>
-              <span className="text-xs text-gray-500 w-10 text-right">
-                {c.eigenvector.toFixed(3)}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Communities */}
-      <div className="rounded bg-gray-800 border border-gray-700 p-4">
-        <h3 className="text-sm font-medium text-gray-400 mb-3">
-          Communities ({communities.num_communities} detected)
+      <div className="rounded-lg border border-gray-700 bg-gray-900 p-5">
+        <h3 className="text-sm font-medium text-gray-300 mb-4">
+          Communities
+          <span className="text-gray-600 font-normal ml-2">
+            {communities.num_communities} detected
+          </span>
         </h3>
         <div className="space-y-3">
           {Object.entries(communityGroups).map(([comm, nodes]) => (
             <div key={comm}>
-              <div className="text-xs text-gray-500 mb-1">
-                Community {parseInt(comm) + 1} ({nodes.length} nodes)
+              <div className="text-[10px] text-gray-600 uppercase tracking-wider mb-1.5">
+                Group {parseInt(comm) + 1}
               </div>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1.5">
                 {nodes.map((node) => (
                   <span
                     key={node}
-                    className="px-2 py-0.5 text-xs rounded bg-gray-700 text-gray-300 font-mono"
+                    className="px-2 py-0.5 text-xs rounded-md bg-gray-800 text-gray-400 font-mono border border-gray-700/50"
                   >
                     {node}
                   </span>
@@ -103,31 +79,32 @@ export default function MetricsPanel({ data }: Props) {
         </div>
       </div>
 
-      {/* Betweenness Centrality */}
-      <div className="rounded bg-gray-800 border border-gray-700 p-4">
-        <h3 className="text-sm font-medium text-gray-400 mb-3">
-          Betweenness Centrality
+      {/* Eigenvector Centrality */}
+      <div className="rounded-lg border border-gray-700 bg-gray-900 p-5">
+        <h3 className="text-sm font-medium text-gray-300 mb-1">
+          Eigenvector Centrality
         </h3>
-        <div className="space-y-2">
-          {Object.entries(centrality)
-            .sort(([, a], [, b]) => b.betweenness - a.betweenness)
-            .slice(0, 5)
-            .map(([node, c]) => (
-              <div key={node} className="flex items-center gap-2">
-                <span className="text-xs font-mono w-12 text-gray-300">
-                  {node}
-                </span>
-                <div className="flex-1 h-2 bg-gray-700 rounded overflow-hidden">
-                  <div
-                    className="h-full bg-amber-500 rounded"
-                    style={{ width: `${c.betweenness * 100}%` }}
-                  />
-                </div>
-                <span className="text-xs text-gray-500 w-10 text-right">
-                  {c.betweenness.toFixed(3)}
-                </span>
+        <p className="text-[10px] text-gray-600 mb-4">
+          Connection to other important nodes — not just "who do you know" but
+          "who do your contacts know"
+        </p>
+        <div className="space-y-2.5">
+          {byCentrality.map(([node, c]) => (
+            <div key={node} className="flex items-center gap-2.5">
+              <span className="text-xs font-mono w-10 text-gray-400">
+                {node}
+              </span>
+              <div className="flex-1 h-1.5 bg-gray-800 rounded overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500/80 rounded"
+                  style={{ width: `${c.eigenvector * 100}%` }}
+                />
               </div>
-            ))}
+              <span className="text-[10px] text-gray-600 w-12 text-right">
+                {c.eigenvector.toFixed(3)}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>

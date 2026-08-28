@@ -11,6 +11,13 @@ function barColor(probNegative: number): string {
   return "#10b981";
 }
 
+function riskLabel(probNegative: number): string {
+  if (probNegative > 0.75) return "Critical";
+  if (probNegative > 0.5) return "High";
+  if (probNegative > 0.25) return "Moderate";
+  return "Low";
+}
+
 export default function StressTestResults({ data }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -21,12 +28,12 @@ export default function StressTestResults({ data }: Props) {
     if (!ctx) return;
 
     const entries = Object.entries(data.results);
-    const width = 700;
-    const height = 300;
-    const padTop = 30;
-    const padBottom = 40;
-    const padLeft = 50;
-    const padRight = 20;
+    const width = 340;
+    const height = 220;
+    const padTop = 20;
+    const padBottom = 30;
+    const padLeft = 45;
+    const padRight = 15;
     const chartW = width - padLeft - padRight;
     const chartH = height - padTop - padBottom;
 
@@ -47,7 +54,8 @@ export default function StressTestResults({ data }: Props) {
       return padTop + chartH - ((v - minVal) / range) * chartH;
     }
 
-    ctx.strokeStyle = "#374151";
+    // grid lines
+    ctx.strokeStyle = "#1f2937";
     ctx.lineWidth = 1;
     for (let i = 0; i <= 4; i++) {
       const val = minVal + (range * i) / 4;
@@ -57,24 +65,26 @@ export default function StressTestResults({ data }: Props) {
       ctx.lineTo(width - padRight, y);
       ctx.stroke();
 
-      ctx.fillStyle = "#9ca3af";
-      ctx.font = "10px sans-serif";
+      ctx.fillStyle = "#6b7280";
+      ctx.font = "9px sans-serif";
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
-      ctx.fillText(val.toFixed(3), padLeft - 6, y);
+      ctx.fillText(val.toFixed(2), padLeft - 5, y);
     }
 
+    // zero line
     const zeroY = yScale(0);
-    ctx.strokeStyle = "#6b7280";
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = "#4b5563";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
     ctx.beginPath();
     ctx.moveTo(padLeft, zeroY);
     ctx.lineTo(width - padRight, zeroY);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    const barW = Math.min(40, (chartW / entries.length) * 0.6);
+    // bars
+    const barW = Math.min(28, (chartW / entries.length) * 0.55);
     const gap = (chartW - barW * entries.length) / (entries.length + 1);
 
     entries.forEach(([asset, result], i) => {
@@ -82,72 +92,82 @@ export default function StressTestResults({ data }: Props) {
       const medianY = yScale(result.median);
       const y0 = yScale(0);
 
-      const color = barColor(result.prob_negative);
-      ctx.fillStyle = color;
+      ctx.fillStyle = barColor(result.prob_negative);
+      ctx.globalAlpha = 0.8;
       ctx.fillRect(x, Math.min(medianY, y0), barW, Math.abs(medianY - y0));
+      ctx.globalAlpha = 1;
 
+      // CI whiskers
       const [ciLow, ciHigh] = result.ci_95;
-      const ciLowY = yScale(ciLow);
-      const ciHighY = yScale(ciHigh);
       const whiskerX = x + barW / 2;
 
-      ctx.strokeStyle = "#d1d5db";
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "#9ca3af";
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(whiskerX, ciLowY);
-      ctx.lineTo(whiskerX, ciHighY);
+      ctx.moveTo(whiskerX, yScale(ciLow));
+      ctx.lineTo(whiskerX, yScale(ciHigh));
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(whiskerX - 4, ciLowY);
-      ctx.lineTo(whiskerX + 4, ciLowY);
+      ctx.moveTo(whiskerX - 3, yScale(ciLow));
+      ctx.lineTo(whiskerX + 3, yScale(ciLow));
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(whiskerX - 4, ciHighY);
-      ctx.lineTo(whiskerX + 4, ciHighY);
+      ctx.moveTo(whiskerX - 3, yScale(ciHigh));
+      ctx.lineTo(whiskerX + 3, yScale(ciHigh));
       ctx.stroke();
 
-      ctx.fillStyle = "#d1d5db";
-      ctx.font = "10px sans-serif";
+      // labels
+      ctx.fillStyle = "#9ca3af";
+      ctx.font = "9px monospace";
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.fillText(asset, x + barW / 2, height - padBottom + 6);
-
-      ctx.textBaseline = "bottom";
-      ctx.fillText(result.median.toFixed(4), x + barW / 2, medianY - 4);
+      ctx.fillText(asset, whiskerX, height - padBottom + 5);
     });
-
-    ctx.fillStyle = "#9ca3af";
-    ctx.font = "11px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "bottom";
-    ctx.fillText("Median response to shock", width / 2, padTop - 10);
   }, [data]);
 
+  const sorted = Object.entries(data.results).sort(
+    (a, b) => a[1].median - b[1].median,
+  );
+
   return (
-    <div className="rounded bg-gray-800 border border-gray-700 p-4">
-      <h3 className="text-sm font-medium mb-2">
-        Results — shock {data.shock_asset} by {(data.shock_magnitude * 100).toFixed(0)}%
-      </h3>
+    <div className="rounded-lg border border-gray-700 bg-gray-900 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-medium text-gray-300">Results</h3>
+        <span className="text-xs text-gray-500">
+          Shock {data.shock_asset} by {(data.shock_magnitude * 100).toFixed(0)}%
+        </span>
+      </div>
+
       <canvas
         ref={canvasRef}
-        className="rounded"
-        style={{ width: 700, height: 300 }}
+        className="w-full rounded"
+        style={{ width: "100%", height: 220 }}
       />
-      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-        {Object.entries(data.results).map(([asset, r]) => (
-          <div key={asset} className="flex items-center gap-2">
+
+      <div className="mt-4 space-y-2">
+        {sorted.map(([asset, r]) => (
+          <div
+            key={asset}
+            className="flex items-center gap-3 text-xs"
+          >
             <span
-              className="inline-block w-2 h-2 rounded-full"
+              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
               style={{ backgroundColor: barColor(r.prob_negative) }}
             />
-            <span className="text-gray-300 font-medium">{asset}</span>
-            <span className="text-gray-500">
-              P(neg)={(r.prob_negative * 100).toFixed(1)}%
-            </span>
-            <span className="text-gray-500">
-              95% CI [{r.ci_95[0].toFixed(4)}, {r.ci_95[1].toFixed(4)}]
+            <span className="font-mono text-gray-300 w-14">{asset}</span>
+            <div className="flex-1 h-1.5 bg-gray-800 rounded overflow-hidden">
+              <div
+                className="h-full rounded transition-all"
+                style={{
+                  width: `${Math.abs(r.median) * 100}%`,
+                  backgroundColor: barColor(r.prob_negative),
+                }}
+              />
+            </div>
+            <span className="text-gray-500 w-20 text-right">
+              {riskLabel(r.prob_negative)}
             </span>
           </div>
         ))}
