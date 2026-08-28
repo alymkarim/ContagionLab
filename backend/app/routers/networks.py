@@ -24,19 +24,22 @@ from app.services.network_builder import (
     build_pearson_network,
     build_spearman_network,
 )
+from app.services.tail_dependence import build_tail_dependence_network
 from app.services.rmt_filter import filter_correlation_matrix
 
 router = APIRouter(prefix="/api/networks", tags=["networks"])
 
 # Map user-friendly method names to the corresponding builder functions.
 # Each builder takes (returns, mode, k, threshold) except granger_causality
-# which takes (returns, max_lag, significance).
+# which takes (returns, max_lag, significance) and tail_dependence which
+# takes (returns, quantile, mode, k).
 METHOD_MAP = {
     "pearson": build_pearson_network,
     "spearman": build_spearman_network,
     "partial_correlation": build_partial_correlation_network,
     "graphical_lasso": build_graphical_lasso_network,
     "granger_causality": build_granger_causality_network,
+    "tail_dependence": build_tail_dependence_network,
 }
 
 
