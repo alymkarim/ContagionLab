@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { buildNetwork, type NetworkResponse } from "./api/client";
+import NetworkGraph from "./components/NetworkGraph";
 
 const METHODS = [
   { value: "pearson", label: "Pearson" },
@@ -88,10 +89,13 @@ function App() {
       </div>
 
       {data && (
-        <div className="mt-8 grid grid-cols-3 gap-4 max-w-xl">
-          <Card label="Nodes" value={data.num_nodes} />
-          <Card label="Edges" value={data.num_edges} />
-          <Card label="Density" value={density.toFixed(3)} />
+        <div className="mt-8 flex flex-col lg:flex-row gap-6">
+          <NetworkGraph data={data} />
+          <div className="grid grid-cols-1 gap-4 min-w-[200px]">
+            <Card label="Nodes" value={data.num_nodes} />
+            <Card label="Edges" value={data.num_edges} />
+            <Card label="Density" value={density.toFixed(3)} />
+          </div>
         </div>
       )}
     </div>
