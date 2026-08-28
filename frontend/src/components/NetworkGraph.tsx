@@ -31,14 +31,12 @@ const COMMUNITY_COLORS = [
 ];
 
 function assignColors(
-  communities: Record<string, string[]>,
+  assignment: Record<string, number>,
 ): Map<string, string> {
   const map = new Map<string, string>();
-  Object.keys(communities).forEach((community, i) => {
-    const color = COMMUNITY_COLORS[i % COMMUNITY_COLORS.length];
-    communities[community].forEach((node) => {
-      map.set(node, color);
-    });
+  Object.entries(assignment).forEach(([node, comm]) => {
+    const color = COMMUNITY_COLORS[(comm as number) % COMMUNITY_COLORS.length];
+    map.set(node, color);
   });
   return map;
 }
@@ -70,7 +68,7 @@ export default function NetworkGraph({ data }: Props) {
     canvas.height = height;
 
     const { graph, metrics } = data;
-    const colorMap = assignColors(metrics.communities);
+    const colorMap = assignColors(metrics.communities.assignment);
     const importanceValues = Object.values(metrics.systemic_importance);
 
     const nodes: SimNode[] = graph.nodes.map((n) => {

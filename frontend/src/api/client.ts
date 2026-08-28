@@ -17,7 +17,11 @@ export interface NetworkResponse {
   };
   metrics: {
     centrality: Record<string, Record<string, number>>;
-    communities: Record<string, string[]>;
+    communities: {
+      num_communities: number;
+      assignment: Record<string, number>;
+      sizes: Record<number, number>;
+    };
     systemic_importance: Record<string, number>;
   };
   method: string;

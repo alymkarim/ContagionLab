@@ -5,6 +5,7 @@ import {
   type StressTestResponse,
 } from "./api/client";
 import NetworkGraph from "./components/NetworkGraph";
+import MetricsPanel from "./components/MetricsPanel";
 import StressTestPanel from "./components/StressTestPanel";
 import StressTestResults from "./components/StressTestResults";
 
@@ -104,6 +105,7 @@ function App() {
               <Card label="Edges" value={data.num_edges} />
               <Card label="Density" value={density.toFixed(3)} />
             </div>
+            <MetricsPanel data={data} />
             <StressTestPanel
               assets={data.graph.nodes.map((n) => n.id)}
               method={data.method}
