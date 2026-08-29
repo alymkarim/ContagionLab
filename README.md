@@ -4,6 +4,14 @@ ContagionLab is a financial contagion analysis tool that builds correlation netw
 
 The project has a FastAPI backend that fetches market data via yfinance, builds networks using networkx, and serves results over HTTP. The frontend is a React + TypeScript app that renders an interactive force-directed graph, displays centrality metrics, and provides crisis analysis and fragility monitoring.
 
+### Why "ContagionLab"?
+
+In epidemiology, contagion describes how a disease spreads through a population: patient zero infects their contacts, who infect theirs, and so on. Financial markets work the same way. When one asset crashes, the shock spreads through the network of correlations to other assets. The stronger the connection, the faster and deeper the transmission.
+
+"Contagion" captures what this tool measures: the spread of financial shocks across interconnected assets. "Lab" reflects what it is: a space to experiment, test hypotheses, and explore what happens under different conditions. You pick the assets, choose the method, simulate the crash, and observe the aftermath. That is the lab.
+
+The term "systemic contagion" is also used in economics and policy circles (Billio et al. 2012, Battiston et al. 2012) to describe the failure of one institution triggering cascading failures across the financial system. The 2008 crisis was a textbook case: Lehman Brothers collapsed, and the contagion spread through counterparty relationships, credit markets, and correlated asset holdings until the entire system was at risk.
+
 ## Mathematical Foundations
 
 ### Correlation and Dependence
