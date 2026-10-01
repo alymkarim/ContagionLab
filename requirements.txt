@@ -4,8 +4,9 @@
 # 500 MB limit on the result. The full dependency tree exceeds that, so this
 # list is deliberately narrower than backend/requirements.txt: httpx and
 # pytest are only used by the test suite, and uvicorn is unused because Vercel
-# runs the ASGI app itself. Keep backend/requirements.txt complete for local
-# development and testing.
+# runs the ASGI app itself. pyarrow is also gone: the price cache is plain
+# CSV, which pandas writes natively, and pyarrow was by far the heaviest
+# item in the bundle. Keep backend/requirements.txt complete for local use.
 fastapi>=0.104.0
 numpy>=1.24.0
 scipy>=1.11.0
@@ -14,4 +15,3 @@ scikit-learn>=1.3.0
 statsmodels>=0.14.0
 networkx>=3.2
 yfinance>=0.2.30
-pyarrow>=14.0

@@ -1,5 +1,5 @@
 """
-Data fetcher service using yfinance with local parquet caching.
+Data fetcher service using yfinance with a local CSV cache.
 
 Fetches adjusted closing prices for requested tickers and computes
 log returns — the standard transformation for modelling financial
@@ -30,7 +30,7 @@ def _writable(candidate: Path) -> bool:
     return os.access(probe, os.W_OK)
 
 
-# Directory for cached parquet files, keyed by ticker set + period.
+# Directory for cached CSV files, keyed by ticker set + period.
 # Locally that is backend/cache next to the app. On a serverless host the
 # checkout is read only, so fall back to the temp directory, which is
 # writable but does not survive a cold start. Losing the cache only costs
@@ -61,7 +61,7 @@ def fetch_prices(
     *,
     use_cache: bool = True,
 ) -> pd.DataFrame:
-    """Fetch adjusted closing prices via yfinance, caching to parquet.
+    """Fetch adjusted closing prices via yfinance, caching to CSV.
 
     Parameters
     ----------
@@ -70,7 +70,7 @@ def fetch_prices(
     period : str
         yfinance period string — "1y", "6mo", "5d", etc.
     use_cache : bool
-        When True (the default), a local parquet file is used if it
+        When True (the default), a local CSV file is used if it
         exists and is less than 1 day old.
 
     Returns
@@ -81,14 +81,14 @@ def fetch_prices(
         more than one ticker is requested), we extract the "Close"
         level so the caller gets a clean ticker-keyed DataFrame.
     """
-    cache_file = _CACHE_DIR / f"{_cache_key(tickers, period)}.parquet"
+    cache_file = _CACHE_DIR / f"{_cache_key(tickers, period)}.csv"
 
     # Serve from cache when fresh (< 1 day old)
     if use_cache and cache_file.exists():
         age_hours = (pd.Timestamp.now().timestamp() - cache_file.stat().st_mtime) / 3600
         if age_hours < 24:
             logger.info("Serving prices from cache (%s)", cache_file.name)
-            return pd.read_parquet(cache_file)
+            return pd.read_csv(cache_file, index_col=0, parse_dates=True)
 
     # --- yfinance download -------------------------------------------------
     # yfinance returns a DataFrame whose shape depends on the number of
@@ -115,7 +115,7 @@ def fetch_prices(
     prices = prices.ffill()
 
     # Persist for future requests
-    prices.to_parquet(cache_file)
+    prices.to_csv(cache_file)
     logger.info("Cached %d rows to %s", len(prices), cache_file.name)
 
     return prices
