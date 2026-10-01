@@ -82,7 +82,10 @@ export interface FragilityResponse {
   history: { date: string; fragility: number; density: number; clustering: number; volatility: number }[];
 }
 
-const BASE = "/api";
+// Relative by default so a single project (frontend + api on the same domain)
+// needs no configuration. Set VITE_API_BASE when the backend lives on its own
+// origin, otherwise the relative path resolves against the frontend host.
+const BASE = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, "") ?? "/api";
 
 export async function buildNetwork(
   assets: string[],
