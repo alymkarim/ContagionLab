@@ -21,12 +21,87 @@ References:
     Econometric Models and Cross-spectral Methods", Econometrica 37.
 """
 
+import logging
+
 import networkx as nx
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
 from sklearn.covariance import GraphicalLassoCV
 from statsmodels.tsa.stattools import grangercausalitytests
+
+logger = logging.getLogger(__name__)
+
+
+def _precision_to_partial(precision: np.ndarray) -> np.ndarray:
+    """Convert a precision (inverse covariance) matrix to partial correlations.
+
+        partial_corr(i,j) = -Theta_ij / sqrt(Theta_ii * Theta_jj)
+
+    Diagonal is set to 1; values are clamped to [-1, 1] to absorb numerical noise.
+    """
+    diag = np.sqrt(np.diag(precision))
+    # Avoid division by zero — diagonal of a valid covariance inverse
+    # should always be positive, but guard anyway.
+    diag = np.maximum(diag, 1e-12)
+    partial_corr = -precision / np.outer(diag, diag)
+    np.fill_diagonal(partial_corr, 1.0)
+    return np.clip(partial_corr, -1.0, 1.0)
+
+
+def _partial_correlation_matrix(returns: pd.DataFrame) -> np.ndarray:
+    """Partial-correlation matrix from returns, robust to singular covariance.
+
+    The sample covariance is singular whenever two assets are perfectly
+    collinear or N >= T — common with real financial data (several broad
+    ETF baskets move in near-lockstep).  A plain inverse raises
+    ``LinAlgError: Singular matrix`` and 500s the API, so we fall back to
+    the Moore–Penrose pseudo-inverse, which matches the true inverse when
+    the matrix is invertible and is the least-squares limit otherwise.
+    """
+    cov = np.cov(returns.values, rowvar=False)
+    try:
+        precision = np.linalg.inv(cov)
+    except np.linalg.LinAlgError:
+        logger.warning("covariance is singular; using Moore-Penrose pseudo-inverse")
+        precision = np.linalg.pinv(cov)
+    return _precision_to_partial(precision)
+
+
+def compute_correlation_matrix(returns: pd.DataFrame, method: str = "pearson") -> np.ndarray:
+    """Compute the N×N correlation/association matrix for a given method.
+
+    This is the single shared primitive behind the Pearson/Spearman/
+    partial-correlation/Graphical-Lasso builders, so the API routers can
+    obtain a raw matrix for RMT filtering without re-implementing each
+    method's maths inline (a source of drift between the /networks/build
+    and /networks RMT code paths).
+
+    Parameters
+    ----------
+    returns : pd.DataFrame
+        (T, N) matrix of asset returns.
+    method : str
+        One of ``pearson``, ``spearman``, ``partial_correlation``,
+        ``graphical_lasso``.
+
+    Returns
+    -------
+    np.ndarray
+        N×N correlation matrix (unit diagonal).
+    """
+    if method == "pearson":
+        return np.corrcoef(returns.values, rowvar=False)
+    if method == "spearman":
+        corr, _ = stats.spearmanr(returns.values)
+        return corr
+    if method == "partial_correlation":
+        return _partial_correlation_matrix(returns)
+    if method == "graphical_lasso":
+        model = GraphicalLassoCV(cv=5).fit(returns.values)
+        return _precision_to_partial(model.precision_)
+    raise ValueError(f"Unknown method: {method!r}. Use 'pearson', 'spearman', "
+                     "'partial_correlation', or 'graphical_lasso'.")
 
 
 def correlation_to_network(
@@ -72,7 +147,10 @@ def correlation_to_network(
         edges = []
         for i in range(n):
             for j in range(i + 1, n):
-                edges.append((abs(corr[i, j]), i, j))
+                w = corr[i, j]
+                if not np.isfinite(w):  # zero-variance columns give NaN — skip
+                    continue
+                edges.append((abs(w), i, j))
         edges.sort(key=lambda x: x[0], reverse=True)
         for w, i, j in edges:
             if w == 0:
@@ -83,8 +161,9 @@ def correlation_to_network(
         # Add every edge whose absolute correlation exceeds the threshold.
         for i in range(n):
             for j in range(i + 1, n):
-                if abs(corr[i, j]) > threshold:
-                    G.add_edge(tickers[i], tickers[j], weight=abs(corr[i, j]))
+                w = corr[i, j]
+                if np.isfinite(w) and abs(w) > threshold:
+                    G.add_edge(tickers[i], tickers[j], weight=abs(w))
     else:
         raise ValueError(f"Unknown mode: {mode!r}. Use 'top_k' or 'threshold'.")
 
@@ -119,7 +198,7 @@ def build_pearson_network(
     -------
     nx.Graph
     """
-    corr = np.corrcoef(returns.values, rowvar=False)
+    corr = compute_correlation_matrix(returns, "pearson")
     return correlation_to_network(corr, list(returns.columns), mode=mode, k=k, threshold=threshold)
 
 
@@ -152,8 +231,7 @@ def build_spearman_network(
     -------
     nx.Graph
     """
-    corr, _ = stats.spearmanr(returns.values)
-    # spearmanr returns (corr_matrix, pvalue) when given a matrix
+    corr = compute_correlation_matrix(returns, "spearman")
     return correlation_to_network(corr, list(returns.columns), mode=mode, k=k, threshold=threshold)
 
 
@@ -180,37 +258,25 @@ def build_partial_correlation_network(
     of which assets are truly directly connected.
 
     Limitations:
-      - Requires the covariance matrix to be invertible (T > N).
       - Sensitive to estimation noise when N is large relative to T.
       - Does not handle sparse systems well without regularization.
+
+    Robustness: falls back to a Moore-Penrose pseudo-inverse when the
+    sample covariance is singular (collinear assets or N >= T), instead
+    of raising ``LinAlgError``.
 
     Parameters
     ----------
     returns : pd.DataFrame
-        (T, N) matrix of asset returns.  T must exceed N.
+        (T, N) matrix of asset returns.
     mode, k, threshold : forwarded to correlation_to_network.
 
     Returns
     -------
     nx.Graph
     """
-    cov = np.cov(returns.values, rowvar=False)
-    # Invert the covariance matrix to get the precision matrix.
-    # This is numerically expensive (O(N^3)) but exact.
-    precision = np.linalg.inv(cov)
-    n = precision.shape[0]
-    # Convert precision matrix entries to partial correlations using:
-    #   rho_partial(i,j) = -Theta_ij / sqrt(Theta_ii * Theta_jj)
-    diag = np.sqrt(np.diag(precision))
-    # Avoid division by zero — diagonal of a valid covariance inverse
-    # should always be positive, but guard anyway.
-    diag = np.maximum(diag, 1e-12)
-    partial_corr = -precision / np.outer(diag, diag)
-    np.fill_diagonal(partial_corr, 1.0)
-    # Clamp to valid correlation range (numerical noise can push values
-    # slightly outside [-1, 1]).
-    partial_corr = np.clip(partial_corr, -1.0, 1.0)
-    return correlation_to_network(partial_corr, list(returns.columns), mode=mode, k=k, threshold=threshold)
+    corr = compute_correlation_matrix(returns, "partial_correlation")
+    return correlation_to_network(corr, list(returns.columns), mode=mode, k=k, threshold=threshold)
 
 
 def build_graphical_lasso_network(
@@ -254,18 +320,8 @@ def build_graphical_lasso_network(
     -------
     nx.Graph
     """
-    model = GraphicalLassoCV(cv=5).fit(returns.values)
-    # The precision matrix from the fitted model
-    precision = model.precision_
-    n = precision.shape[0]
-    # Convert to partial correlations using the same formula as above:
-    #   rho_partial(i,j) = -Theta_ij / sqrt(Theta_ii * Theta_jj)
-    diag = np.sqrt(np.diag(precision))
-    diag = np.maximum(diag, 1e-12)
-    partial_corr = -precision / np.outer(diag, diag)
-    np.fill_diagonal(partial_corr, 1.0)
-    partial_corr = np.clip(partial_corr, -1.0, 1.0)
-    return correlation_to_network(partial_corr, list(returns.columns), mode=mode, k=k, threshold=threshold)
+    corr = compute_correlation_matrix(returns, "graphical_lasso")
+    return correlation_to_network(corr, list(returns.columns), mode=mode, k=k, threshold=threshold)
 
 
 def build_granger_causality_network(

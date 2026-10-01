@@ -100,3 +100,43 @@ def test_compare_tail_vs_pearson():
     assert "interpretation" in result
     assert result["pearson_edges"] > 0
     assert result["tail_edges"] > 0
+
+
+# --- Upper-tail / both / invalid-tail feature tests ---
+
+def test_upper_tail_dependence():
+    """Upper-tail mode measures rallies, not crashes."""
+    returns = _fake_returns(seed=123)
+    upper = compute_tail_dependence(returns, quantile=0.10, tail="upper")
+    assert upper.shape == (4, 4)
+    assert (upper >= 0).all().all() and (upper <= 1).all().all()
+    # Same-tailed, correlated assets should still link
+    assert upper.loc["A", "B"] > 0
+
+
+def test_tail_dependence_default_is_lower():
+    """Default tail='lower' is unchanged from the legacy behaviour."""
+    rng = np.random.default_rng(5)
+    ret = pd.DataFrame({c: rng.standard_normal(150) for c in "ABC"})
+    legacy = compute_tail_dependence(ret, quantile=0.05)
+    newer = compute_tail_dependence(ret, quantile=0.05, tail="lower")
+    pd.testing.assert_frame_equal(legacy, newer)
+
+
+def test_both_packs_lower_and_upper():
+    """both=True returns a 2*N column frame with _lower/_upper pairs."""
+    returns = _fake_returns(seed=99)
+    both = compute_tail_dependence(returns, quantile=0.05, both=True)
+    assert both.shape == (4, 8)
+    assert "A_lower" in both.columns and "A_upper" in both.columns
+    # The lower block matches the single-tail lower output
+    single = compute_tail_dependence(returns, quantile=0.05, tail="lower")
+    for t in "ABCD":
+        assert both.loc[t, f"{t}_lower"] == pytest.approx(single.loc[t, t], abs=1e-10)
+
+
+def test_invalid_tail_raises():
+    """An unknown tail string should raise a clear ValueError."""
+    returns = _fake_returns()
+    with pytest.raises(ValueError):
+        compute_tail_dependence(returns, tail="middle")

@@ -107,3 +107,70 @@ def test_correlation_to_network_top_k():
         assert G.degree(node) <= 2, (
             f"Node {node} has degree {G.degree(node)}, expected at most 2"
         )
+
+
+# --- Bug-fix regression tests: singular covariance, NaN corr, shared primitive ---
+
+def test_partial_correlation_singular_covariance_no_crash():
+    """Collinear assets (singular covariance) must not 500; pinv fallback applies."""
+    rng = np.random.default_rng(7)
+    x = rng.standard_normal(5)
+    # 5 identical columns -> perfectly singular covariance
+    ret = pd.DataFrame({c: x for c in "ABCDE"})
+    G = build_partial_correlation_network(ret, mode="threshold", threshold=0.0)
+    assert G.number_of_nodes() == 5
+    # Perfectly collinear -> complete graph on 5 nodes
+    assert G.number_of_edges() == 10
+
+
+def test_partial_correlation_n_ge_t_singular():
+    """N >= T makes covariance singular; must build rather than raise LinAlgError."""
+    rng = np.random.default_rng(3)
+    ret = pd.DataFrame(rng.standard_normal((3, 5)), columns=list("ABCDE"))
+    G = build_partial_correlation_network(ret, mode="top_k", k=2)
+    assert G.number_of_nodes() == 5
+
+
+def test_correlation_to_network_drops_nan():
+    """Zero-variance column yields NaN corr; it must not become an edge."""
+    rng = np.random.default_rng(1)
+    ret = pd.DataFrame({
+        "A": rng.standard_normal(20),
+        "B": np.ones(20),          # zero variance -> NaN pearson corr
+        "C": rng.standard_normal(20),
+    })
+    corr = np.corrcoef(ret.values, rowvar=False)
+    assert np.isnan(corr).any()  # the bug precondition
+    G = build_pearson_network(ret, mode="threshold", threshold=0.0)
+    # B must be isolated (finite corr with it would be NaN -> no edge)
+    assert G.degree("B") == 0
+    assert "A" in G and "C" in G
+
+
+def test_compute_correlation_matrix_shares_builders():
+    """compute_correlation_matrix is the single source the builders use."""
+    returns = _make_test_returns(n_assets=6, n_obs=120)
+    from app.services.network_builder import compute_correlation_matrix
+    corr = compute_correlation_matrix(returns, "pearson")
+    assert corr.shape == (6, 6)
+    G = build_pearson_network(returns)
+    # Every edge weight should equal |corr| of that pair
+    for u, v, d in G.edges(data=True):
+        i, j = list(returns.columns).index(u), list(returns.columns).index(v)
+        assert d["weight"] == pytest.approx(abs(corr[i, j]), abs=1e-9)
+
+
+def test_compute_correlation_matrix_supports_all_methods():
+    from app.services.network_builder import compute_correlation_matrix
+    returns = _make_test_returns(n_assets=5, n_obs=100)
+    for method in ("pearson", "spearman", "partial_correlation", "graphical_lasso"):
+        corr = compute_correlation_matrix(returns, method)
+        assert corr.shape == (5, 5)
+        assert np.allclose(np.diag(corr), 1.0)
+
+
+def test_compute_correlation_matrix_invalid_method():
+    from app.services.network_builder import compute_correlation_matrix
+    returns = _make_test_returns(n_assets=3)
+    with pytest.raises(ValueError):
+        compute_correlation_matrix(returns, "bogus")
