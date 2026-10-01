@@ -10,6 +10,8 @@ two single-period returns).
 
 import hashlib
 import logging
+import os
+import tempfile
 from pathlib import Path
 from typing import Sequence
 
@@ -19,9 +21,27 @@ import yfinance as yf
 
 logger = logging.getLogger(__name__)
 
-# Directory for cached parquet files, keyed by ticker set + period
+
+def _writable(candidate: Path) -> bool:
+    """Whether candidate, or the closest parent that exists, accepts writes."""
+    probe = candidate
+    while not probe.exists() and probe != probe.parent:
+        probe = probe.parent
+    return os.access(probe, os.W_OK)
+
+
+# Directory for cached parquet files, keyed by ticker set + period.
+# Locally that is backend/cache next to the app. On a serverless host the
+# checkout is read only, so fall back to the temp directory, which is
+# writable but does not survive a cold start. Losing the cache only costs
+# a round trip to Yahoo, so a directory we cannot create is not fatal.
 _CACHE_DIR = Path(__file__).resolve().parent.parent.parent / "cache"
-_CACHE_DIR.mkdir(exist_ok=True)
+if not _writable(_CACHE_DIR):
+    _CACHE_DIR = Path(tempfile.gettempdir()) / "contagionlab-cache"
+try:
+    _CACHE_DIR.mkdir(parents=True, exist_ok=True)
+except OSError:
+    logger.warning("No writable cache directory, prices will be fetched every time")
 
 
 def _cache_key(tickers: Sequence[str], period: str) -> str:
