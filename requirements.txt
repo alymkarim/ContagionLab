@@ -1,5 +1,12 @@
+# Root requirements.txt for the Vercel Python function.
+#
+# The platform installs the function bundle from THIS file, and enforces a
+# 500 MB limit on the result. The full dependency tree exceeds that, so this
+# list is deliberately narrower than backend/requirements.txt: httpx and
+# pytest are only used by the test suite, and uvicorn is unused because Vercel
+# runs the ASGI app itself. Keep backend/requirements.txt complete for local
+# development and testing.
 fastapi>=0.104.0
-uvicorn>=0.24.0
 numpy>=1.24.0
 scipy>=1.11.0
 pandas>=2.1.0
@@ -8,4 +15,3 @@ statsmodels>=0.14.0
 networkx>=3.2
 yfinance>=0.2.30
 pyarrow>=14.0
-httpx>=0.25.0
