@@ -1,6 +1,9 @@
 # Backend FastAPI application with CORS middleware and health endpoint
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.routers.assets import router as assets_router
 from app.routers.networks import router as networks_router
@@ -37,3 +40,11 @@ def health_check():
     Returns a simple status dictionary.
     """
     return {"status": "ok"}
+
+
+# Serve the built frontend from this same app so the whole thing deploys as a
+# single function instead of depending on the platform's static file routing.
+# Mounted last so the API routes registered above take precedence over it.
+_FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+if _FRONTEND_DIST.is_dir():
+    app.mount("/", StaticFiles(directory=_FRONTEND_DIST, html=True), name="frontend")

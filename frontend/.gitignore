@@ -8,7 +8,10 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
+# dist/ is committed on purpose: the FastAPI app in backend/app/main.py serves
+# it as static files, so the built frontend ships with the backend bundle and
+# the project deploys as a single Vercel function.
+!dist
 dist-ssr
 *.local
 
