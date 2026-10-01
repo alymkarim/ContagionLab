@@ -4,6 +4,29 @@ ContagionLab is a financial contagion analysis tool that builds correlation netw
 
 The project has a FastAPI backend that fetches market data via yfinance, builds networks using networkx, and serves results over HTTP. The frontend is a React + TypeScript app that renders an interactive force-directed graph, displays centrality metrics, and provides crisis analysis and fragility monitoring.
 
+## Live demo
+
+**[contagionlab.vercel.app](https://contagionlab.vercel.app)**
+
+The whole application is deployed and running, not a static screenshot. You can build a correlation network over any combination of tickers, switch between the six construction methods, run a Monte Carlo stress test, replay a historical crisis, and watch the fragility gauge move. Market data is pulled live from Yahoo Finance at request time.
+
+The React frontend and the FastAPI backend are served from a single Python function on Vercel, so the first request after a spell of inactivity pays a cold start while the scientific stack imports. Once warm, a network build takes about a second.
+
+### Using the API directly
+
+Every feature is reachable over plain HTTP, so you can drive it from a script instead of the interface:
+
+```
+GET  /api/assets                      asset universe grouped by sector
+POST /api/networks/build              correlation network plus centrality metrics
+POST /api/stress-test/run             Monte Carlo shock simulation
+GET  /api/crisis/list                 historical crises available to replay
+POST /api/crisis/analyze              replay one crisis against the network
+POST /api/fragility/compute           fragility metrics over time
+```
+
+`POST /api/networks/build` takes a JSON body of `assets` (an array of ticker symbols), `method`, `period`, `top_k` and `use_rmt`, and returns the graph alongside centrality, community and systemic importance metrics.
+
 ### Why "ContagionLab"?
 
 In epidemiology, contagion describes how a disease spreads through a population: patient zero infects their contacts, who infect theirs, and so on. Financial markets work the same way. When one asset crashes, the shock spreads through the network of correlations to other assets. The stronger the connection, the faster and deeper the transmission.
