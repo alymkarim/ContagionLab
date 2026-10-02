@@ -29,12 +29,13 @@ where q is a quantile threshold (e.g., 5th percentile = 0.05).
 import numpy as np
 import pandas as pd
 import networkx as nx
-from scipy import stats
 
 
 def compute_tail_dependence(
     returns: pd.DataFrame,
     quantile: float = 0.05,
+    tail: str = "lower",
+    both: bool = False,
 ) -> pd.DataFrame:
     """
     Compute pairwise tail dependence coefficients.
@@ -45,44 +46,63 @@ def compute_tail_dependence(
         Log returns matrix (T x N)
     quantile : float
         Threshold for "extreme" events (default 5th percentile)
+    tail : str
+        Which tail to measure: ``"lower"`` (crashes) or ``"upper"``
+        (rallies).  Only used when ``both`` is False.
+    both : bool
+        When True, return a 2-layer matrix packing the lower and upper
+        tail coefficients together (see Returns).
 
     Returns
     -------
     pd.DataFrame
-        NxN matrix of tail dependence coefficients
+        NxN matrix of tail dependence coefficients.  When ``both`` is
+        True the columns are ``f"{col}_lower"`` / ``f"{col}_upper"``
+        pairs so both tails can be compared in one frame; otherwise the
+        index/columns mirror ``returns.columns``.
     """
     tickers = list(returns.columns)
     n = len(tickers)
-    tail_corr = np.zeros((n, n))
 
-    for i in range(n):
-        for j in range(n):
-            if i == j:
-                tail_corr[i, j] = 1.0
-            else:
-                # Lower tail dependence
-                # Count joint extremes / marginal extremes
+    def _estimate(lower: bool) -> np.ndarray:
+        m = np.zeros((n, n))
+        for i in range(n):
+            for j in range(n):
+                if i == j:
+                    m[i, j] = 1.0
+                    continue
                 x = returns.iloc[:, i].values
                 y = returns.iloc[:, j].values
-
-                q_x = np.percentile(x, quantile * 100)
-                q_y = np.percentile(y, quantile * 100)
-
-                # Joint probability of both being in lower tail
-                joint_extreme = np.mean((x <= q_x) & (y <= q_y))
-                # Marginal probability
-                marginal = quantile
-
-                # Tail dependence coefficient
-                if marginal > 0:
-                    tail_corr[i, j] = joint_extreme / marginal
+                if lower:
+                    q_x = np.percentile(x, quantile * 100)
+                    q_y = np.percentile(y, quantile * 100)
+                    joint = np.mean((x <= q_x) & (y <= q_y))
                 else:
-                    tail_corr[i, j] = 0.0
+                    q_x = np.percentile(x, (1 - quantile) * 100)
+                    q_y = np.percentile(y, (1 - quantile) * 100)
+                    joint = np.mean((x >= q_x) & (y >= q_y))
+                # Marginal probability of one asset being in its tail.
+                marginal = quantile
+                m[i, j] = joint / marginal if marginal > 0 else 0.0
+        return np.clip(m, 0, 1)
 
-    # Clip to [0, 1] (numerical issues)
-    tail_corr = np.clip(tail_corr, 0, 1)
+    if both:
+        lower = _estimate(lower=True)
+        upper = _estimate(lower=False)
+        columns = [f"{t}_{suffix}" for t in tickers for suffix in ("lower", "upper")]
+        data = np.empty((n, 2 * n), dtype=float)
+        data[:, 0::2] = lower
+        data[:, 1::2] = upper
+        return pd.DataFrame(data, index=tickers, columns=columns)
 
-    return pd.DataFrame(tail_corr, index=tickers, columns=tickers)
+    tail = (tail or "").lower()
+    if tail == "upper":
+        m = _estimate(lower=False)
+    elif tail in ("lower", ""):
+        m = _estimate(lower=True)
+    else:
+        raise ValueError(f"tail must be 'lower' or 'upper', got {tail!r}")
+    return pd.DataFrame(m, index=tickers, columns=tickers)
 
 
 def build_tail_dependence_network(

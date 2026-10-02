@@ -8,6 +8,9 @@ node_modules/
 dist/
 .pytest_cache/
 .mypy_cache/
+.coverage
+htmlcov/
+coverage.xml
 .superpowers/
 .vercel/
 backend/cache/

@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from app.services.fragility import (
     compute_fragility_index,
@@ -85,3 +84,28 @@ def test_fragility_with_different_methods():
         result = compute_fragility_index(returns, window=60, method=method)
         assert "fragility" in result.columns
         assert len(result) > 0
+
+
+# --- Bug-fix regression: insufficient observations must not crash ---
+
+def test_fragility_window_larger_than_history_does_not_crash():
+    """window >= len(returns) should return an empty frame, not KeyError."""
+    returns = _fake_returns(n=30)
+    result = compute_fragility_index(returns, window=60)
+    assert isinstance(result, pd.DataFrame)
+    assert result.empty
+
+
+def test_fragility_window_equal_to_history_does_not_crash():
+    """window == len(returns) yields zero windows -> empty frame."""
+    returns = _fake_returns(n=60)
+    result = compute_fragility_index(returns, window=60)
+    assert isinstance(result, pd.DataFrame)
+    assert result.empty
+
+
+def test_fragility_summary_empty_is_graceful():
+    """get_fragility_summary on an empty frame returns {} (used by the router)."""
+    returns = _fake_returns(n=30)
+    result = compute_fragility_index(returns, window=60)
+    assert get_fragility_summary(result) == {}

@@ -32,7 +32,6 @@ High fragility = ordered (fragile, correlated, one shock away from collapse).
 import numpy as np
 import pandas as pd
 import networkx as nx
-from typing import Optional
 
 
 def compute_fragility_index(
@@ -129,6 +128,17 @@ def compute_fragility_index(
             "spectral_gap": round(spectral_gap, 4),
             "volatility": round(volatility, 4),
         })
+
+    if not results:
+        # Not enough observations to form even one rolling window.
+        # Return an empty DataFrame with the expected schema instead of
+        # crashing on set_index of an empty frame.
+        return pd.DataFrame(
+            columns=[
+                "fragility", "density", "clustering",
+                "avg_path_length", "spectral_gap", "volatility",
+            ]
+        ).set_index(pd.DatetimeIndex([], name="date"))
 
     return pd.DataFrame(results).set_index("date")
 

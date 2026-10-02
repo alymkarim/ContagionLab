@@ -23,6 +23,8 @@ from app.services.network_builder import (
     build_partial_correlation_network,
     build_pearson_network,
     build_spearman_network,
+    compute_correlation_matrix,
+    correlation_to_network,
 )
 from app.services.tail_dependence import build_tail_dependence_network
 from app.services.rmt_filter import filter_correlation_matrix
@@ -106,40 +108,14 @@ def build_network(req: NetworkBuildRequest):
     # When use_rmt=True, we re-build from a filtered correlation matrix.
     # This only applies to correlation-based methods (not Granger).
     if req.use_rmt and method != "granger_causality":
-        import numpy as np
-
-        # Recompute the correlation matrix based on the method
-        if method == "pearson":
-            corr = np.corrcoef(returns.values, rowvar=False)
-        elif method == "spearman":
-            from scipy.stats import spearmanr
-
-            corr, _ = spearmanr(returns.values)
-        elif method == "partial_correlation":
-            cov = np.cov(returns.values, rowvar=False)
-            precision = np.linalg.inv(cov)
-            diag = np.sqrt(np.diag(precision))
-            diag = np.maximum(diag, 1e-12)
-            corr = -precision / np.outer(diag, diag)
-            np.fill_diagonal(corr, 1.0)
-            corr = np.clip(corr, -1.0, 1.0)
-        elif method == "graphical_lasso":
-            from sklearn.covariance import GraphicalLassoCV
-
-            model = GraphicalLassoCV(cv=5).fit(returns.values)
-            precision = model.precision_
-            diag = np.sqrt(np.diag(precision))
-            diag = np.maximum(diag, 1e-12)
-            corr = -precision / np.outer(diag, diag)
-            np.fill_diagonal(corr, 1.0)
-            corr = np.clip(corr, -1.0, 1.0)
+        # Recompute the correlation matrix from the shared primitive so this
+        # path can't drift from the method builders above.
+        corr = compute_correlation_matrix(returns, method)
 
         # Apply RMT: clip noise eigenvalues below the Marchenko-Pastur bound.
         # T = number of return observations, used to compute the bound.
         t = returns.shape[0]
         filtered_corr = filter_correlation_matrix(corr, t)
-
-        from app.services.network_builder import correlation_to_network
 
         G = correlation_to_network(
             filtered_corr,
